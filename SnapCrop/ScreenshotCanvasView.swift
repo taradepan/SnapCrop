@@ -19,6 +19,7 @@ struct ScreenshotCanvasView: View {
     @State private var gradientPadding: CGFloat = 48
     @State private var screenshotCornerRadius: CGFloat = 32
     @State private var gradientCornerRadius: CGFloat = 32
+    @State private var selectedGradient: GradientStyle = .pinkBlue
     
     var body: some View {
         ZStack {
@@ -59,16 +60,17 @@ struct ScreenshotCanvasView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .animation(.spring(), value: captureEngine.capturedImage)
                     // Floating toolbar below screenshot
-                    if !isExporting {
+                    if !isExporting && captureEngine.capturedImage != nil {
                         HStack(spacing: 18) {
                             Button(action: { copyExportedImage() }) {
-                                Image(systemName: "doc.on.clipboard")
+                                Label("Copy", systemImage: "doc.on.clipboard")
                                     .font(.system(size: 20, weight: .bold))
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.borderedProminent)
+                            .tint(.accentColor)
                             .controlSize(.large)
                             Button(action: { saveExportedImage() }) {
-                                Image(systemName: "square.and.arrow.down")
+                                Label("Export", systemImage: "square.and.arrow.down")
                                     .font(.system(size: 20, weight: .bold))
                             }
                             .buttonStyle(.borderedProminent)
@@ -104,10 +106,10 @@ struct ScreenshotCanvasView: View {
                             }
                         }
                         .padding(.horizontal, 32)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 18)
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .shadow(color: Color.black.opacity(0.08), radius: 18, y: 2)
+                        .shadow(color: Color.black.opacity(0.18), radius: 24, y: 4)
                         .padding(.bottom, 32)
                         .padding(.top, 8)
                         .frame(maxWidth: 700)
@@ -184,6 +186,12 @@ struct ScreenshotCanvasView: View {
                     HStack {
                         Spacer()
                         VStack(alignment: .trailing, spacing: 12) {
+                            Picker("Gradient", selection: $selectedGradient) {
+                                ForEach(GradientStyle.allCases) { style in
+                                    Text(style.displayName).tag(style)
+                                }
+                            }
+                            .pickerStyle(.menu)
                             HStack {
                                 Text("Gradient Width")
                                     .font(.caption)
@@ -279,9 +287,38 @@ struct ScreenshotCanvasView: View {
                                   xRadius: gradientCornerRadius, yRadius: gradientCornerRadius)
         bgPath.addClip() // This ensures only the rounded area is drawn, corners remain transparent
 
-        // 2. Draw the gradient inside the clipped area
-        let gradient = NSGradient(colors: [NSColor.systemPink, NSColor.systemBlue])!
-        gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 135)
+        // 2. Draw the selected gradient inside the clipped area
+        switch selectedGradient {
+        case .pinkBlue:
+            let gradient = NSGradient(colors: [NSColor.systemPink, NSColor.systemBlue])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 135)
+        case .orangePurple:
+            let gradient = NSGradient(colors: [NSColor.systemOrange, NSColor.systemPurple])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 90)
+        case .linearTealPurple:
+            let gradient = NSGradient(colors: [NSColor.systemTeal, NSColor.systemPurple])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 120)
+        case .angularRainbow:
+            let gradient = NSGradient(colors: [
+                NSColor.systemRed, NSColor.systemOrange, NSColor.systemYellow,
+                NSColor.systemGreen, NSColor.systemBlue, NSColor.systemPurple, NSColor.systemRed
+            ])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 0)
+        case .linearGreenBlue:
+            let gradient = NSGradient(colors: [NSColor.systemGreen, NSColor.systemBlue])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 100)
+        case .linearOrangePink:
+            let gradient = NSGradient(colors: [NSColor.systemOrange, NSColor.systemPink])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 60)
+        case .angularOcean:
+            let gradient = NSGradient(colors: [
+                NSColor.systemTeal, NSColor.systemBlue, NSColor.systemPurple, NSColor.systemTeal
+            ])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 0)
+        case .linearGrayBlack:
+            let gradient = NSGradient(colors: [NSColor.systemGray, NSColor.black])!
+            gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 90)
+        }
 
         // 3. Draw the screenshot with its own rounded corners
         let targetRect = CGRect(x: gradientPadding, y: gradientPadding,
@@ -383,34 +420,27 @@ func calculateAccurateImageFrame(
     )
 }
 
-private func compositedImageWithGradient(
-    _ screenshot: NSImage,
-    gradientPadding: CGFloat,
-    gradientCornerRadius: CGFloat,
-    screenshotCornerRadius: CGFloat
-) -> NSImage {
-    let finalSize = CGSize(width: screenshot.size.width + gradientPadding * 2,
-                           height: screenshot.size.height + gradientPadding * 2)
-    let image = NSImage(size: finalSize)
-    image.lockFocus()
-
-    // 1. Create a rounded rect path for the gradient
-    let bgPath = NSBezierPath(roundedRect: NSRect(origin: .zero, size: finalSize),
-                              xRadius: gradientCornerRadius, yRadius: gradientCornerRadius)
-    bgPath.addClip() // This ensures only the rounded area is drawn, corners remain transparent
-
-    // 2. Draw the gradient inside the clipped area
-    let gradient = NSGradient(colors: [NSColor.systemPink, NSColor.systemBlue])!
-    gradient.draw(in: NSRect(origin: .zero, size: finalSize), angle: 135)
-
-    // 3. Draw the screenshot with its own rounded corners
-    let targetRect = CGRect(x: gradientPadding, y: gradientPadding,
-                            width: screenshot.size.width, height: screenshot.size.height)
-    let screenshotPath = NSBezierPath(roundedRect: targetRect,
-                                      xRadius: screenshotCornerRadius, yRadius: screenshotCornerRadius)
-    screenshotPath.addClip()
-    screenshot.draw(in: targetRect)
-
-    image.unlockFocus()
-    return image
+// Gradient style options
+private enum GradientStyle: String, CaseIterable, Identifiable {
+    case pinkBlue
+    case orangePurple
+    case linearTealPurple
+    case angularRainbow
+    case linearGreenBlue
+    case linearOrangePink
+    case angularOcean
+    case linearGrayBlack
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .pinkBlue: return "Pink → Blue"
+        case .orangePurple: return "Orange → Purple"
+        case .linearTealPurple: return "Teal → Purple"
+        case .angularRainbow: return "Angular Rainbow"
+        case .linearGreenBlue: return "Green → Blue"
+        case .linearOrangePink: return "Orange → Pink"
+        case .angularOcean: return "Angular Ocean"
+        case .linearGrayBlack: return "Gray → Black"
+        }
+    }
 }
