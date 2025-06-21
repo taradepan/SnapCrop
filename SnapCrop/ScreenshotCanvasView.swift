@@ -229,6 +229,36 @@ struct ScreenshotCanvasView: View {
                     }
                 }
             }
+            // Floating Copy/Export icon buttons at bottom left (do not affect screenshot layout)
+            if captureEngine.capturedImage != nil {
+                VStack {
+                    Spacer()
+                    HStack {
+                        HStack(spacing: 14) {
+                            Button(action: { copyExportedImage() }) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 22, weight: .bold))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
+                            Button(action: { saveExportedImage() }) {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.system(size: 22, weight: .bold))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
+                        }
+                        .padding(10)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.10), radius: 12, y: 2)
+                        Spacer()
+                    }
+                    .padding([.bottom, .leading], 28)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .offset(y: -12)
+            }
         }
         .onChange(of: captureEngine.capturedImage) { oldImage, newImage in
             if newImage != nil {
