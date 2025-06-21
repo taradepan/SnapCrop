@@ -11,7 +11,9 @@ import SwiftUI
 struct SnapCropApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ZStack {
+                ContentView()
+            }
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
