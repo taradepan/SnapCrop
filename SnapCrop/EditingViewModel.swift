@@ -25,6 +25,8 @@ class EditingViewModel: ObservableObject {
     @Published var shadowRadius: CGFloat = 45
     @Published var shadowYOffset: CGFloat = 25
     
+    @Published var showGradient: Bool = true
+    
     // Published properties for alerts
     @Published var showCopiedAlert = false
     @Published var showExportSuccessAlert = false
@@ -49,6 +51,7 @@ class EditingViewModel: ObservableObject {
             screenshotCornerRadius: screenshotCornerRadius,
             gradientCornerRadius: gradientCornerRadius,
             activeGradient: activeGradient,
+            showGradient: showGradient,
             showShadow: showShadow,
             shadowOpacity: shadowOpacity,
             shadowRadius: shadowRadius,

@@ -17,6 +17,7 @@ struct FinalImageView: View {
     let screenshotCornerRadius: CGFloat
     let gradientCornerRadius: CGFloat
     let activeGradient: PredefinedGradient
+    let showGradient: Bool
     let showShadow: Bool
     let shadowOpacity: Double
     let shadowRadius: CGFloat
@@ -27,10 +28,15 @@ struct FinalImageView: View {
             let availableWidth = max(geo.size.width - 2 * gradientPadding, 1)
             let availableHeight = max(geo.size.height - 2 * gradientPadding, 1)
             ZStack {
-                RoundedRectangle(cornerRadius: gradientCornerRadius, style: .continuous)
-                    .fill(activeGradient.gradient)
-                    .frame(width: geo.size.width, height: geo.size.height)
-
+                if showGradient {
+                    RoundedRectangle(cornerRadius: gradientCornerRadius, style: .continuous)
+                        .fill(activeGradient.gradient)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                } else {
+                    RoundedRectangle(cornerRadius: gradientCornerRadius, style: .continuous)
+                        .fill(Color.clear)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                }
                 ScreenshotWithEffects(
                     image: sourceImage,
                     screenshotCornerRadius: screenshotCornerRadius,

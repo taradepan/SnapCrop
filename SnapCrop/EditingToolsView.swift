@@ -58,6 +58,7 @@ struct EditingToolsView: View {
                 
                 Text("Gradient").font(.headline)
                 GradientPicker(selection: $viewModel.activeGradient)
+                Toggle("Show Gradient Background", isOn: $viewModel.showGradient)
                 
                 Spacer()
 

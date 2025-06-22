@@ -26,7 +26,7 @@ struct ScreenshotCanvasView: View {
             Color(nsColor: .underPageBackgroundColor).ignoresSafeArea()
 
             if captureEngine.capturedImage != nil {
-                EditingCanvas(viewModel: editingViewModel, canvasSize: $canvasSize)
+                EditingCanvas(viewModel: editingViewModel, canvasSize: $canvasSize, showGradient: editingViewModel.showGradient)
             } else {
                 PlaceholderView()
             }
@@ -97,6 +97,7 @@ struct EditingCanvas: View {
     @State var scale: CGFloat = 1.0
     @State var offset: CGSize = .zero
     @Binding var canvasSize: CGSize
+    var showGradient: Bool
     
     var body: some View {
         GeometryReader { geo in
@@ -106,6 +107,7 @@ struct EditingCanvas: View {
                 screenshotCornerRadius: viewModel.screenshotCornerRadius,
                 gradientCornerRadius: viewModel.gradientCornerRadius,
                 activeGradient: viewModel.activeGradient,
+                showGradient: showGradient,
                 showShadow: viewModel.showShadow,
                 shadowOpacity: viewModel.shadowOpacity,
                 shadowRadius: viewModel.shadowRadius,
