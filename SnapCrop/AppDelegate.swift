@@ -12,7 +12,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create the status bar item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem?.button {
-            button.image = NSImage(named: NSImage.actionTemplateName)
+            button.image = NSImage(named: "MenuBarIcon")
+            button.image?.isTemplate = true // For monochrome, adaptive icons
             button.action = #selector(statusBarButtonClicked)
             button.target = self
         }

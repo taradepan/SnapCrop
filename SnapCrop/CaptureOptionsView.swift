@@ -31,9 +31,10 @@ struct CaptureOptionsView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            Image(systemName: "camera.aperture")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(LinearGradient(gradient: Gradient(colors: [Color.blue, Color.purple]), startPoint: .top, endPoint: .bottom))
+            Image("AppIconImage")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 36, height: 36)
             VStack(alignment: .leading, spacing: 2) {
                 Text("SnapCrop")
                     .font(.title.bold())
