@@ -14,8 +14,8 @@ struct ContentView: View {
     @State private var selectedWindow: SCWindow?
     
     var body: some View {
+        // Sidebar with capture options
         NavigationSplitView {
-            // Sidebar with capture options
             CaptureOptionsView(
                 selectedMode: $selectedMode,
                 selectedWindow: $selectedWindow,

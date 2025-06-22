@@ -20,6 +20,20 @@ struct ScreenshotCanvasView: View {
     @State private var screenshotCornerRadius: CGFloat = 32
     @State private var gradientCornerRadius: CGFloat = 32
     @State private var selectedGradient: GradientStyle = .pinkBlue
+    @State private var exportSuccess: Bool = false
+    @State private var exportError: String?
+    @State private var showExportAlert: Bool = false
+    
+    private var compositedImageData: Data? {
+        guard let image = captureEngine.capturedImage else { return nil }
+        let composited = compositedImageWithGradient(
+            image,
+            gradientPadding: gradientPadding,
+            gradientCornerRadius: gradientCornerRadius,
+            screenshotCornerRadius: screenshotCornerRadius
+        )
+        return composited.pngData()
+    }
     
     var body: some View {
         ZStack {
@@ -239,14 +253,16 @@ struct ScreenshotCanvasView: View {
                                 Image(systemName: "doc.on.doc")
                                     .font(.system(size: 22, weight: .bold))
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
-                            Button(action: { saveExportedImage() }) {
+                            .buttonStyle(GlassyFloatingButtonStyle())
+                            .help("Copy to Clipboard")
+                            Button(action: {
+                                saveExportedImage()
+                            }) {
                                 Image(systemName: "square.and.arrow.down")
                                     .font(.system(size: 22, weight: .bold))
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
+                            .buttonStyle(GlassyFloatingButtonStyle())
+                            .help("Export Image")
                         }
                         .padding(10)
                         .background(.ultraThinMaterial)
@@ -380,25 +396,42 @@ struct ScreenshotCanvasView: View {
         }
     }
     private func saveExportedImage() {
-        if let image = captureEngine.capturedImage {
-            let composited = compositedImageWithGradient(
-                image,
-                gradientPadding: gradientPadding,
-                gradientCornerRadius: gradientCornerRadius,
-                screenshotCornerRadius: screenshotCornerRadius
-            )
-            let panel = NSSavePanel()
-            panel.allowedContentTypes = [.png]
-            panel.canCreateDirectories = true
-            panel.nameFieldStringValue = "Screenshot-\(formatDateForFilename()).png"
-            panel.message = "Save your beautiful screenshot"
-            if panel.runModal() == .OK, let url = panel.url {
-                do {
-                    try composited.writePNG(to: url)
-                } catch {
-                    print("❌ Failed to save image: \(error)")
-                }
+        print("🚨 saveExportedImage() called")
+        guard let image = captureEngine.capturedImage else {
+            print("❌ No captured image available for export.")
+            return
+        }
+        let composited = compositedImageWithGradient(
+            image,
+            gradientPadding: gradientPadding,
+            gradientCornerRadius: gradientCornerRadius,
+            screenshotCornerRadius: screenshotCornerRadius
+        )
+        print("🖼️ Composited image size: \(composited.size.width)x\(composited.size.height)")
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "Screenshot-\(formatDateForFilename()).png"
+        panel.message = "Save your beautiful screenshot"
+        print("📂 Opening NSSavePanel...")
+        let result = panel.runModal()
+        print("📂 NSSavePanel result: \(result.rawValue)")
+        if result == .OK, let url = panel.url {
+            print("💾 Saving to URL: \(url.path)")
+            do {
+                try composited.writePNG(to: url)
+                print("✅ Screenshot saved to: \(url.path)")
+                exportSuccess = true
+                exportError = nil
+                showExportAlert = true
+            } catch {
+                print("❌ Failed to save image: \(error)")
+                exportSuccess = false
+                exportError = error.localizedDescription
+                showExportAlert = true
             }
+        } else {
+            print("❌ NSSavePanel was cancelled or no URL selected.")
         }
     }
 }
@@ -472,5 +505,65 @@ private enum GradientStyle: String, CaseIterable, Identifiable {
         case .angularOcean: return "Angular Ocean"
         case .linearGrayBlack: return "Gray → Black"
         }
+    }
+}
+
+// MARK: - Modern Glassy Button Style
+struct GlassyFloatingButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        GlassyButton(configuration: configuration)
+    }
+    struct GlassyButton: View {
+        let configuration: Configuration
+        @State private var isHovered = false
+        var body: some View {
+            configuration.label
+                .padding(12)
+                .background(
+                    BlurView(material: .sidebar)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.13), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(configuration.isPressed ? 0.08 : 0.16), radius: configuration.isPressed ? 4 : 12, y: 2)
+                .scaleEffect(configuration.isPressed ? 0.96 : (isHovered ? 1.08 : 1.0))
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovered)
+                .onHover { hovering in
+                    isHovered = hovering
+                }
+        }
+    }
+}
+
+// Helper for BlurView
+struct BlurView: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = .withinWindow
+        view.state = .active
+        return view
+    }
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+struct ImageFileDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.png] }
+    var data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        self.data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        return .init(regularFileWithContents: data)
     }
 }
