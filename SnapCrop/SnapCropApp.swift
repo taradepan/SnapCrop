@@ -9,13 +9,9 @@ import SwiftUI
 
 @main
 struct SnapCropApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
-        WindowGroup {
-            ZStack {
-                ContentView()
-            }
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
+        // No WindowGroup here. All window management is handled by AppDelegate.
     }
 }
