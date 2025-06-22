@@ -57,6 +57,14 @@ class EditingViewModel: ObservableObject {
             shadowRadius: shadowRadius,
             shadowYOffset: shadowYOffset
         )
+        .aspectRatio(
+            CGSize(
+                width: sourceImage.size.width + gradientPadding * 2,
+                height: sourceImage.size.height + gradientPadding * 2
+            ),
+            contentMode: .fit
+        )
+        .padding()
         .frame(width: size.width, height: size.height)
 
         let renderer = ImageRenderer(content: viewToRender)
