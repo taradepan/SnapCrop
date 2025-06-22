@@ -161,6 +161,9 @@ struct CaptureOptionsView: View {
 @MainActor
 class WindowManager: ObservableObject {
     @Published var availableWindows: [SCWindow] = []
+    
+    // Use a shared instance of ScreenshotCaptureEngine for filtering
+    private let filterEngine = ScreenshotCaptureEngine()
 
     init() {
         refreshWindows()
@@ -170,12 +173,7 @@ class WindowManager: ObservableObject {
         Task {
             do {
                 let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-                self.availableWindows = content.windows.filter {
-                    guard let app = $0.owningApplication else { return false }
-                    guard $0.isOnScreen else { return false }
-                    guard $0.title != nil && !$0.title!.isEmpty else { return false }
-                    return app.bundleIdentifier != "com.apple.dt.xctest.tool"
-                }
+                self.availableWindows = filterEngine.filterUsefulWindows(content.windows)
             } catch {
                 print("Error refreshing windows: \(error.localizedDescription)")
             }

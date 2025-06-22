@@ -45,7 +45,7 @@ class ScreenshotCaptureEngine: ObservableObject {
     }
     
     /// Filter windows to show only useful application windows
-    private func filterUsefulWindows(_ windows: [SCWindow]) -> [SCWindow] {
+    func filterUsefulWindows(_ windows: [SCWindow]) -> [SCWindow] {
         return windows.filter { window in
             // Must be on screen
             guard window.isOnScreen else { return false }
