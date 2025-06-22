@@ -17,6 +17,12 @@ class ScreenshotCaptureEngine: ObservableObject {
     @Published var availableWindows: [SCWindow] = []
     @Published var hasPermissions = false
     
+    // State for capture settings
+    @Published var captureType: CaptureType = .fullScreen
+    @Published var selectedWindow: SCWindow? = nil
+    
+    private var stream: SCStream?
+    
     init() {
         print("📱 ScreenshotCaptureEngine initialized")
         Task {
@@ -117,22 +123,22 @@ class ScreenshotCaptureEngine: ObservableObject {
     }
     
     /// Capture screenshot based on mode
-    func captureScreenshot(mode: CaptureMode, selectedWindow: SCWindow? = nil) async {
+    func capture() async {
         guard hasPermissions else {
             await checkPermissions()
             return
         }
         
-        switch mode {
+        switch captureType {
         case .selection:
             // Use macOS built-in selection tool
             await captureWithNativeSelection()
         case .fullScreen:
             // Hide app for full screen capture
             await captureFullScreenWithHiddenApp()
-        default:
+        case .window:
             // Regular window capture (don't hide app)
-            await performRegularCapture(mode: mode, selectedWindow: selectedWindow)
+            await performRegularCapture(mode: .window, selectedWindow: selectedWindow)
         }
     }
     
@@ -229,7 +235,7 @@ class ScreenshotCaptureEngine: ObservableObject {
     }
     
     /// Regular capture for window mode (doesn't hide app)
-    private func performRegularCapture(mode: CaptureMode, selectedWindow: SCWindow?) async {
+    private func performRegularCapture(mode: CaptureType, selectedWindow: SCWindow?) async {
         isCapturing = true
         captureError = nil
         
@@ -246,7 +252,7 @@ class ScreenshotCaptureEngine: ObservableObject {
     }
     
     /// Perform the actual screenshot capture using ScreenCaptureKit
-    private func performCapture(mode: CaptureMode, selectedWindow: SCWindow?) async throws -> NSImage {
+    private func performCapture(mode: CaptureType, selectedWindow: SCWindow?) async throws -> NSImage {
         let availableContent = try await SCShareableContent.current
         
         let filter: SCContentFilter
@@ -258,6 +264,7 @@ class ScreenshotCaptureEngine: ObservableObject {
                 throw CaptureError.noDisplayFound
             }
             filter = SCContentFilter(display: display, excludingWindows: [])
+            // Use the full pixel resolution for the stream
             configuration.width = display.width
             configuration.height = display.height
             
@@ -265,9 +272,21 @@ class ScreenshotCaptureEngine: ObservableObject {
             guard let window = selectedWindow else {
                 throw CaptureError.noWindowSelected
             }
+            // Find the display the window is on to get the correct scale factor.
+            // This ensures window captures are at full Retina resolution.
+            guard let display = availableContent.displays.first(where: { $0.frame.intersects(window.frame) }) ?? availableContent.displays.first else {
+                throw CaptureError.noDisplayFound
+            }
+            // Find the matching NSScreen to get its backingScaleFactor.
+            let scale = NSScreen.screens.first { screen in
+                (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID) == display.displayID
+            }?.backingScaleFactor ?? 2.0 // Default to a common Retina scale
+            
             filter = SCContentFilter(desktopIndependentWindow: window)
-            configuration.width = Int(window.frame.width)
-            configuration.height = Int(window.frame.height)
+            
+            // Use the window's frame in pixels for the highest quality.
+            configuration.width = Int(window.frame.width * scale)
+            configuration.height = Int(window.frame.height * scale)
             
         case .selection:
             // This case is handled in captureWithNativeSelection()
@@ -285,8 +304,9 @@ class ScreenshotCaptureEngine: ObservableObject {
             configuration: configuration
         )
         
-        // Convert CGImage to NSImage
-        let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+        // Convert CGImage to NSImage, preserving its pixel density.
+        // Using size: .zero allows NSImage to infer the correct size in points.
+        let nsImage = NSImage(cgImage: image, size: .zero)
         return nsImage
     }
     
@@ -340,26 +360,5 @@ class ScreenshotCaptureEngine: ObservableObject {
     func copyImageToClipboard(_ image: NSImage) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.writeObjects([image])
-    }
-}
-
-// MARK: - Capture Errors
-enum CaptureError: LocalizedError {
-    case noDisplayFound
-    case noWindowSelected
-    case failedToSaveImage
-    case permissionDenied
-    
-    var errorDescription: String? {
-        switch self {
-        case .noDisplayFound:
-            return "No display found for capture"
-        case .noWindowSelected:
-            return "No window selected for capture"
-        case .failedToSaveImage:
-            return "Failed to save image"
-        case .permissionDenied:
-            return "Screen recording permission denied"
-        }
     }
 }

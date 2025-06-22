@@ -5,108 +5,60 @@
 //  Created by taradepan on 2025-06-21.
 //
 
-import Foundation
+import ScreenCaptureKit
+import SwiftUI
 
-/// Capture mode options for screenshots
-enum CaptureMode: String, CaseIterable, Identifiable {
-    case fullScreen = "fullScreen"
-    case window = "window"
-    case selection = "selection"
+enum CaptureType: String, CaseIterable, Identifiable {
+    case fullScreen = "Full Screen"
+    case window = "Window"
+    case selection = "Selection"
     
-    var id: String { rawValue }
+    var id: String { self.rawValue }
     
-    var displayName: String {
+    var systemImage: String {
         switch self {
-        case .fullScreen:
-            return "Full Screen"
-        case .window:
-            return "Window"
-        case .selection:
-            return "Selection"
-        }
-    }
-    
-    var iconName: String {
-        switch self {
-        case .fullScreen:
-            return "rectangle.dashed"
-        case .window:
-            return "macwindow"
-        case .selection:
-            return "selection.pin.in.out"
+        case .fullScreen: return "macwindow"
+        case .window: return "display"
+        case .selection: return "selection.pin.in.out"
         }
     }
     
     var description: String {
         switch self {
-        case .fullScreen:
-            return "Capture the entire screen"
-        case .window:
-            return "Capture a specific window"
-        case .selection:
-            return "Select area to capture"
+        case .fullScreen: return "Capture the entire screen"
+        case .window: return "Capture a specific window"
+        case .selection: return "Select an area to capture"
         }
     }
 }
 
-/// Screenshot quality options
-enum CaptureQuality: String, CaseIterable, Identifiable {
-    case standard = "standard"
-    case high = "high"
-    case retina = "retina"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
+enum CaptureError: Error, LocalizedError {
+    case permissionDenied
+    case noDisplayFound
+    case noWindowSelected
+    case imageCreationError
+    case failedToSaveImage
+
+    var errorDescription: String? {
         switch self {
-        case .standard:
-            return "Standard"
-        case .high:
-            return "High Quality"
-        case .retina:
-            return "Retina"
-        }
-    }
-    
-    var scaleFactor: CGFloat {
-        switch self {
-        case .standard:
-            return 1.0
-        case .high:
-            return 1.5
-        case .retina:
-            return 2.0
+        case .permissionDenied:
+            return "Screen recording permission denied. Please grant permission in System Settings."
+        case .noDisplayFound:
+            return "Could not find a display to capture."
+        case .noWindowSelected:
+            return "No window was selected for capture."
+        case .imageCreationError:
+            return "There was an error creating the image."
+        case .failedToSaveImage:
+            return "Failed to save the captured image."
         }
     }
 }
 
-/// Export format options
-enum ExportFormat: String, CaseIterable, Identifiable {
-    case png = "png"
-    case jpg = "jpg"
-    case heic = "heic"
+extension Notification.Name {
+    /// Notification to request that the current canvas content be rendered and copied to the clipboard.
+    static let requestRenderAndCopy = Notification.Name("com.snapcrop.requestRenderAndCopy")
     
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .png:
-            return "PNG"
-        case .jpg:
-            return "JPEG"
-        case .heic:
-            return "HEIC"
-        }
-    }
-    
-    var fileExtension: String {
-        switch self {
-        case .png:
-            return "png"
-        case .jpg:
-            return "jpg"
-        case .heic:
-            return "heic"
-        }
-    }
+    /// Notification to request that the current canvas content be rendered and saved to a file.
+    static let requestRenderAndSave = Notification.Name("com.snapcrop.requestRenderAndSave")
 }

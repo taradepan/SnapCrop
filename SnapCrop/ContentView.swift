@@ -10,23 +10,52 @@ import ScreenCaptureKit
 
 struct ContentView: View {
     @StateObject private var captureEngine = ScreenshotCaptureEngine()
-    @State private var selectedMode: CaptureMode = .fullScreen
-    @State private var selectedWindow: SCWindow?
-    
+    @StateObject private var editingViewModel = EditingViewModel(image: NSImage())
+    @State private var canvasSize: CGSize = .zero
+
     var body: some View {
-        // Sidebar with capture options
+        Group {
+            if captureEngine.capturedImage == nil {
+                captureView
+            } else {
+                editingView
+            }
+        }
+        .frame(minWidth: 900, minHeight: 600)
+        .onChange(of: captureEngine.capturedImage) { _, newImage in
+            if let newImage = newImage {
+                editingViewModel.updateImage(newImage)
+            }
+        }
+    }
+
+    private var captureView: some View {
         NavigationSplitView {
             CaptureOptionsView(
-                selectedMode: $selectedMode,
-                selectedWindow: $selectedWindow,
-                captureEngine: captureEngine
+                captureType: $captureEngine.captureType,
+                selectedWindow: $captureEngine.selectedWindow,
+                onCapture: {
+                    Task {
+                        await captureEngine.capture()
+                    }
+                }
             )
+            .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 400)
         } detail: {
-            // Main canvas area
-            ScreenshotCanvasView(captureEngine: captureEngine)
+            ScreenshotCanvasView(captureEngine: captureEngine, editingViewModel: editingViewModel, canvasSize: $canvasSize)
         }
         .navigationSplitViewStyle(.balanced)
-        .frame(minWidth: 800, minHeight: 600)
+    }
+    
+    private var editingView: some View {
+        HStack(spacing: 0) {
+            ScreenshotCanvasView(captureEngine: captureEngine, editingViewModel: editingViewModel, canvasSize: $canvasSize)
+            
+            EditingToolsView(viewModel: editingViewModel, canvasSize: $canvasSize) {
+                // Action for "New Capture" button
+                captureEngine.capturedImage = nil
+            }
+        }
     }
 }
 
