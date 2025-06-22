@@ -12,6 +12,7 @@ struct ContentView: View {
     @StateObject private var captureEngine = ScreenshotCaptureEngine()
     @StateObject private var editingViewModel = EditingViewModel(image: NSImage())
     @State private var canvasSize: CGSize = .zero
+    @State private var toast: Toast? = nil
 
     var body: some View {
         Group {
@@ -27,6 +28,19 @@ struct ContentView: View {
                 editingViewModel.updateImage(newImage)
             }
         }
+        .onChange(of: editingViewModel.showCopiedAlert) { _, newValue in
+            if newValue {
+                toast = Toast(style: .success, message: "Copied to Clipboard!")
+                editingViewModel.showCopiedAlert = false
+            }
+        }
+        .onChange(of: editingViewModel.showExportSuccessAlert) { _, newValue in
+            if newValue {
+                toast = Toast(style: .success, message: "Image Exported!")
+                editingViewModel.showExportSuccessAlert = false
+            }
+        }
+        .toast(toast: $toast)
     }
 
     private var captureView: some View {
