@@ -4,7 +4,7 @@
 
 # SnapCrop
 
-SnapCrop is a lightweight, open source tool for capturing and editing screenshots, built entirely in Swift for **macOS**. Designed for speed and simplicity, SnapCrop lets you quickly capture and enhance screenshots with privacy in mind—everything runs locally, no data ever leaves your device.
+SnapCrop is a lightweight, open source tool for capturing and editing screenshots, built entirely in Swift for **macOS**. Designed for speed and simplicity, SnapCrop lets you quickly capture and enhance screenshots with privacy in mind, everything runs locally, no data ever leaves your device.
 
 ## Features
 
